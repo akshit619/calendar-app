@@ -10,6 +10,8 @@ import {
 
 import {EventsService} from './events.service';
 import {Event} from './event.model';
+import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 @Controller('events')
 export class EventsController {
@@ -17,6 +19,7 @@ export class EventsController {
 
     @Get()
     findAll(): Event[]{
+        // console.log('GET /events hit');
         return this.eventsService.findAll();
     }
 
@@ -26,14 +29,13 @@ export class EventsController {
     }
 
     @Post()
-    create(@Body() body: Partial<Event>): Event {
-        return this.eventsService.create(body);
-    
+    create(@Body() createEventDto: CreateEventDto): Event {
+        return this.eventsService.create(createEventDto);
     }
 
     @Put(':id')
-    update(@Param('id') id: string, @Body() body: Partial<Event>): Event {
-        return this.eventsService.update(id, body);
+    update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto): Event {
+        return this.eventsService.update(id, updateEventDto);
     }
 
     @Delete(':id')

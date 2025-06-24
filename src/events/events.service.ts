@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Event } from './event.model';
 import { v4 as uuidv4 } from 'uuid';
+import { CreateEventDto } from './dto/create-event.dto';
 
 @Injectable()
 export class EventsService {
@@ -16,7 +17,7 @@ export class EventsService {
         return event;
     }
 
-    create(eventData: Partial<Event>): Event {
+    create(eventData: CreateEventDto): Event {
         const newEvent: Event = {
             id: uuidv4(),
             title: eventData.title,
