@@ -19,7 +19,7 @@ export class EventsController {
 
     @Get()
     findAll(): Event[]{
-        // console.log('GET /events hit');
+        console.log('GET /events hit');
         return this.eventsService.findAll();
     }
 

@@ -38,6 +38,8 @@ export class EventsService {
     }
 
     delete(id: string): void {
-        this.events = this.events.filter(e => e.id !== id);
+        const index = this.events.findIndex(e => e.id === id);
+        if (index === -1) throw new NotFoundException('Event not found');
+        this.events.splice(index, 1);
     }
 }
