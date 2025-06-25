@@ -151,6 +151,8 @@ export default function CalendarClient() {
         }
     };
 
+    const eventsForDate = events[getDateKey(date)] || [];
+
     return (
         <div className="flex flex-col items-center">
         <Calendar
@@ -163,12 +165,13 @@ export default function CalendarClient() {
             {Array.isArray(date) ? date[0].toDateString() : date.toDateString()}
         </p>
 
-        {events[getDateKey(date)]?.length > 0 && (
+        
+        {eventsForDate.length > 0 ? (
             <div className="mb-4 text-sm text-black">
                 <p className="font-medium mb-1">Saved events:</p>
                 <ul className="list-disc list-inside space-y-1">
-                {events[getDateKey(date)]
-                ?.slice()
+                {eventsForDate
+                .slice()
                 .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime())
                 .map((event) => {
                     const time = new Date(event.datetime).toLocaleTimeString([], {
@@ -212,6 +215,8 @@ export default function CalendarClient() {
                 })}
                 </ul>
             </div>
+        ) : (
+            <p className="text-sm text-gray-500 italic mb-4">No events scheduled for this date.</p>
         )}
 
         <button
@@ -231,7 +236,7 @@ export default function CalendarClient() {
             className="bg-white p-6 rounded shadow-lg w-80 mx-auto mt-40"
             overlayClassName="fixed inset-0 bg-black bg-opacity-30 flex justify-center items-start"
         >
-            <h2 className="text-lg font-semibold mb-2 text-black">Add Event</h2>
+            <h2 className="text-lg font-semibold mb-2 text-black">{selectedEventId ? 'Edit Event' : 'Add Event'}</h2>
             <input
             type="text"
             placeholder="Event title"
@@ -279,7 +284,7 @@ export default function CalendarClient() {
                 onClick={handleSave}
                 className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-            Save
+            {selectedEventId ? 'Update' : 'Save'}
             </button>
             </div>
         </Modal>
