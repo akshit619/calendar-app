@@ -180,24 +180,40 @@ export default function CalendarClient() {
                     });
 
                     return (
-                    <li key={event.id} className="flex justify-between items-center">
-                        <span
-                            className="cursor-pointer hover:text-blue-500"
+                    <li
+                        key={event.id}
+                        className="flex justify-between items-start p-2 bg-white rounded hover:bg-gray-50 transition"
+                    >
+                        <div
+                            className="flex-1 cursor-pointer hover:text-blue-500"
                             onClick={() => {
-                                setDate(new Date(event.datetime));
-                                setSelectedEventId(event.id);
-                                setEventTitle(event.title);
-                                setTime(new Date(event.datetime).toTimeString().slice(0, 5));
-                                setImageUrl(event.imageUrl || '');
-                                setVideoUrl(event.videoUrl || '');
-                                setIsModalOpen(true);
+                            setDate(new Date(event.datetime));
+                            setSelectedEventId(event.id);
+                            setEventTitle(event.title);
+                            setTime(new Date(event.datetime).toTimeString().slice(0, 5));
+                            setImageUrl(event.imageUrl || '');
+                            setVideoUrl(event.videoUrl || '');
+                            setIsModalOpen(true);
                             }}
                         >
-                        <span className="font-semibold">{time}</span> — {event.title}
-                        </span>
+                            <p className="text-sm font-semibold text-black">
+                            {new Date(event.datetime).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}{' '}
+                            — {event.title}
+                            </p>
+
+                            {(event.imageUrl || event.videoUrl) && (
+                            <div className="mt-1 text-xs text-gray-500 flex gap-2">
+                                {event.imageUrl && <span>🖼 Image</span>}
+                                {event.videoUrl && <span>🎥 Video</span>}
+                            </div>
+                            )}
+                        </div>
 
                         <button
-                        onClick={async () => {
+                            onClick={async () => {
                             try {
                                 await deleteEvent(event.id);
                                 toast.success('Event deleted!');
@@ -205,8 +221,8 @@ export default function CalendarClient() {
                             } catch {
                                 toast.error('Failed to delete event');
                             }
-                        }}
-                        className="ml-2 text-red-500 text-xs hover:underline"
+                            }}
+                            className="text-red-500 text-xs hover:underline mt-1 ml-2"
                         >
                         Delete
                         </button>
