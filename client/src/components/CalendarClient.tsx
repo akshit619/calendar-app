@@ -1,14 +1,12 @@
 'use client';
 
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Calendar from 'react-calendar';
 import Modal from 'react-modal';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-calendar/dist/Calendar.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { getEvents, createEvent, updateEvent, deleteEvent } from '@/services/api';
-
 
 
 export default function CalendarClient() {
@@ -20,6 +18,19 @@ export default function CalendarClient() {
     const [imageUrl, setImageUrl] = useState('');
     const [videoUrl, setVideoUrl] = useState('');
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+    const requestNotificationPermission = () => {
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                toast.success('Notifications enabled!');
+            } else {
+                toast.error('Notifications denied.');
+            }
+            });
+        }
+    };
+
 
 
     const fetchEvents = async () => {
@@ -37,16 +48,79 @@ export default function CalendarClient() {
         }
     };
 
+    const showNotification = (event: any) => {
+        if (Notification.permission !== 'granted') return;
+
+        const notification = new Notification(`🔔 Event: ${event.title}`, {
+            body: 'Click to snooze for 1 minutes.',
+            requireInteraction: true,
+        });
+
+        notification.onclick = () => {
+            notification.close();
+            // Snooze for 1 minutes
+            setTimeout(() => {
+            showNotification(event);
+            }, 1 * 60 * 1000);
+        };
+    };
+
 
     useEffect(() => {
         Modal.setAppElement('#root');
         fetchEvents();
     }, []);
 
+    useEffect(() => {
+        if (Notification.permission !== 'granted') {
+            Notification.requestPermission();
+        }
+    }, []);
+
+    const notifiedIds = useRef<Set<string>>(new Set());
+
+    useEffect(() => {
+        Object.values(events).flat().forEach(event => {
+            if (notifiedIds.current.has(event.id)) return;
+
+            const eventTime = new Date(event.datetime).getTime();
+            const now = Date.now();
+            const curr = new Date().toISOString();
+            console.log(curr);
+            console.log(eventTime);
+            console.log(now);
+
+            const delay = eventTime - now;
+            console.log(delay);
+            
+
+            if (eventTime > now) {
+                const delay = eventTime - now;
+                if (delay <= 0) {
+                    console.log(`Skipping "${event.title}" – already in the past.`);
+                    return;
+                }
+                console.log(delay);
+                console.log(`!!! Scheduling notification for "${event.title}" at`, new Date(eventTime).toLocaleString());
+
+                console.log(`Delay is ${delay / 1000}s`);
+
+                setTimeout(() => {
+                    showNotification(event);
+                    notifiedIds.current.delete(event.id); // optionally remove after showing
+                }, delay);
+
+                notifiedIds.current.add(event.id);
+            }
+        });
+    }, [events]);
+
+
     const handleDateChange = (selectedDate: Date | Date[]) => {
         setDate(selectedDate);
         setEventTitle('');
         setIsModalOpen(true);
+        requestNotificationPermission();
     };
 
     const getDateKey = (date: Date | Date[]) => {
@@ -54,29 +128,15 @@ export default function CalendarClient() {
         return d.toISOString().split('T')[0]; // YYYY-MM-DD
     };
 
-    // const handleSave = async () => {
-    //     const key = getDateKey(date);
-    //     try{
-    //         const res = await createEvent({
-    //             title: eventTitle,
-    //             datetime: `${key}T${time || '00:00'}:00`,
-    //             description: '',
-    //             imageUrl,
-    //             videoUrl,
-    //         });
-    //         toast.success('Event saved!');
-    //         setIsModalOpen(false);
-    //         fetchEvents();
-    //     }catch(error){
-    //         toast.error('Failed to save event');
-    //     }
-    // };
-
     const handleSave = async () => {
         const key = getDateKey(date);
+        const localDateTime = new Date(`${key}T${time}:00`);
+        const plus24Hours = new Date(localDateTime.getTime() + 24 * 60 * 60 * 1000);
+        const isoAfter24Hours = plus24Hours.toISOString();
+        
         const payload = {
             title: eventTitle,
-            datetime: `${key}T${time || '00:00'}:00`,
+            datetime: isoAfter24Hours,
             description: '',
             imageUrl,
             videoUrl,
@@ -110,26 +170,6 @@ export default function CalendarClient() {
             Selected date:{' '}
             {Array.isArray(date) ? date[0].toDateString() : date.toDateString()}
         </p>
-
-        {/* {events[getDateKey(date)]?.length > 0 && (
-            <div className="mb-4 text-sm text-black">
-                <p className="font-medium mb-1">Saved events:</p>
-                <ul className="list-disc list-inside space-y-1">
-                {events[getDateKey(date)].map((event, idx) => {
-                    const time = new Date(event.datetime).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    });
-
-                    return (
-                    <li key={event.id}>
-                        <span className="font-semibold">{time}</span> — {event.title}
-                    </li>
-                    );
-                })}
-                </ul>
-            </div>
-        )} */}
 
         {events[getDateKey(date)]?.length > 0 && (
             <div className="mb-4 text-sm text-black">
@@ -179,6 +219,17 @@ export default function CalendarClient() {
             </div>
         )}
 
+        <button
+            onClick={() => {
+                new Notification("🔔 Test Reminder", {
+                body: "This is how your event reminder will look!",
+                });
+            }}
+            className="px-3 py-1 text-sm bg-indigo-500 text-white rounded hover:bg-indigo-600"
+            >
+            Trigger Test Notification
+        </button>
+
         <Modal
             isOpen={isModalOpen}
             onRequestClose={() => setIsModalOpen(false)}
@@ -214,6 +265,7 @@ export default function CalendarClient() {
                 onChange={e => setVideoUrl(e.target.value)}
                 className="border border-gray-300 rounded p-2 w-full mb-4 text-black"
             />
+
             <div className="flex justify-end space-x-2">
             <button
                 onClick={() => {
