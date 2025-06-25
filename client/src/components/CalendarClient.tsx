@@ -121,6 +121,7 @@ export default function CalendarClient() {
         return d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
     };
 
+
     const handleSave = async () => {
         const key = getDateKey(date);
         const localDateTime = new Date(`${key}T${time}:00`);
