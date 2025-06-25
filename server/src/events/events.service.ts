@@ -8,6 +8,7 @@ export class EventsService {
     private events: Event[] = [];
 
     findAll(): Event[] {
+        console.log('Current events:', this.events);
         return this.events;
     }
 

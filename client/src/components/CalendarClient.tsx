@@ -15,15 +15,20 @@ export default function CalendarClient() {
     const [date, setDate] = useState<Date | Date[]>(new Date());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [eventTitle, setEventTitle] = useState('');
-    const [events, setEvents] = useState<Record<string, string>>({});
+    const [events, setEvents] = useState<Record<string, any[]>>({});
+    const [time, setTime] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [videoUrl, setVideoUrl] = useState('');
 
 
     const fetchEvents = async () => {
         try {
             const res = await getEvents();
-            const mappedEvents: Record<string, string> = {};
+            const mappedEvents: Record<string, any[]> = {};
             res.data.forEach((event: any) => {
-                mappedEvents[event.datetime] = event.title;
+                const dateOnly = event.datetime.split('T')[0];
+                if (!mappedEvents[dateOnly]) mappedEvents[dateOnly] = [];
+                mappedEvents[dateOnly].push(event);
             });
             setEvents(mappedEvents);
         } catch (error) {
@@ -39,7 +44,7 @@ export default function CalendarClient() {
 
     const handleDateChange = (selectedDate: Date | Date[]) => {
         setDate(selectedDate);
-        setEventTitle(events[getDateKey(selectedDate)] || '');
+        setEventTitle('');
         setIsModalOpen(true);
     };
 
@@ -56,14 +61,14 @@ export default function CalendarClient() {
         try{
             const res = await createEvent({
                 title: eventTitle,
-                datetime: key,
+                datetime: `${key}T${time || '00:00'}:00`,
                 description: '',
-                imageUrl: '',
-                videoUrl: '',
+                imageUrl,
+                videoUrl,
             });
             toast.success('Event saved!');
             setIsModalOpen(false);
-            fetchEvents(); // refresh events
+            fetchEvents();
         }catch(error){
             toast.error('Failed to save event');
         }
@@ -81,6 +86,37 @@ export default function CalendarClient() {
             {Array.isArray(date) ? date[0].toDateString() : date.toDateString()}
         </p>
 
+        {/* {events[getDateKey(date)]?.length > 0 && (
+            <div className="mb-4 text-sm text-black">
+                <p className="font-medium">Saved events:</p>
+                <ul className="list-disc list-inside">
+                {events[getDateKey(date)].map((event, idx) => (
+                    <li key={idx}>{event.title}</li>
+                ))}
+                </ul>
+            </div>
+        )} */}
+
+        {events[getDateKey(date)]?.length > 0 && (
+            <div className="mb-4 text-sm text-black">
+                <p className="font-medium mb-1">Saved events:</p>
+                <ul className="list-disc list-inside space-y-1">
+                {events[getDateKey(date)].map((event, idx) => {
+                    const time = new Date(event.datetime).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    });
+
+                    return (
+                    <li key={event.id}>
+                        <span className="font-semibold">{time}</span> — {event.title}
+                    </li>
+                    );
+                })}
+                </ul>
+            </div>
+        )}
+
         <Modal
             isOpen={isModalOpen}
             onRequestClose={() => setIsModalOpen(false)}
@@ -95,18 +131,39 @@ export default function CalendarClient() {
             onChange={e => setEventTitle(e.target.value)}
             className="border border-gray-300 rounded p-2 w-full mb-4 text-black"
             />
+            <input
+                type="time"
+                value={time}
+                onChange={e => setTime(e.target.value)}
+                className="border border-gray-300 rounded p-2 w-full mb-2 text-black"
+                placeholder="Time"
+            />
+            <input
+                type="text"
+                placeholder="Image URL"
+                value={imageUrl}
+                onChange={e => setImageUrl(e.target.value)}
+                className="border border-gray-300 rounded p-2 w-full mb-2 text-black"
+            />
+            <input
+                type="text"
+                placeholder="Video URL"
+                value={videoUrl}
+                onChange={e => setVideoUrl(e.target.value)}
+                className="border border-gray-300 rounded p-2 w-full mb-4 text-black"
+            />
             <div className="flex justify-end space-x-2">
             <button
                 onClick={() => setIsModalOpen(false)}
                 className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 text-black"
             >
-                Cancel
+            Cancel
             </button>
             <button
                 onClick={handleSave}
                 className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-                Save
+            Save
             </button>
             </div>
         </Modal>
