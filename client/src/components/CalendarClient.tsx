@@ -38,7 +38,7 @@ export default function CalendarClient() {
             const res = await getEvents();
             const mappedEvents: Record<string, any[]> = {};
             res.data.forEach((event: any) => {
-                const dateOnly = event.datetime.split('T')[0];
+                const dateOnly = new Date(event.datetime).toLocaleDateString('sv-SE');
                 if (!mappedEvents[dateOnly]) mappedEvents[dateOnly] = [];
                 mappedEvents[dateOnly].push(event);
             });
@@ -86,12 +86,6 @@ export default function CalendarClient() {
             const eventTime = new Date(event.datetime).getTime();
             const now = Date.now();
             const curr = new Date().toISOString();
-            console.log(curr);
-            console.log(eventTime);
-            console.log(now);
-
-            const delay = eventTime - now;
-            console.log(delay);
             
 
             if (eventTime > now) {
@@ -100,7 +94,6 @@ export default function CalendarClient() {
                     console.log(`Skipping "${event.title}" – already in the past.`);
                     return;
                 }
-                console.log(delay);
                 console.log(`!!! Scheduling notification for "${event.title}" at`, new Date(eventTime).toLocaleString());
 
                 console.log(`Delay is ${delay / 1000}s`);
@@ -125,18 +118,17 @@ export default function CalendarClient() {
 
     const getDateKey = (date: Date | Date[]) => {
         const d = Array.isArray(date) ? date[0] : date;
-        return d.toISOString().split('T')[0]; // YYYY-MM-DD
+        return d.toLocaleDateString('sv-SE'); // YYYY-MM-DD
     };
 
     const handleSave = async () => {
         const key = getDateKey(date);
         const localDateTime = new Date(`${key}T${time}:00`);
-        const plus24Hours = new Date(localDateTime.getTime() + 24 * 60 * 60 * 1000);
-        const isoAfter24Hours = plus24Hours.toISOString();
-        
+        const datetime = localDateTime.toISOString();
+
         const payload = {
             title: eventTitle,
-            datetime: isoAfter24Hours,
+            datetime,
             description: '',
             imageUrl,
             videoUrl,
@@ -175,7 +167,10 @@ export default function CalendarClient() {
             <div className="mb-4 text-sm text-black">
                 <p className="font-medium mb-1">Saved events:</p>
                 <ul className="list-disc list-inside space-y-1">
-                {events[getDateKey(date)].map((event) => {
+                {events[getDateKey(date)]
+                ?.slice()
+                .sort((a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime())
+                .map((event) => {
                     const time = new Date(event.datetime).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
