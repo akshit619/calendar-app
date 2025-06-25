@@ -7,7 +7,7 @@ import Modal from 'react-modal';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-calendar/dist/Calendar.css';
 import 'react-toastify/dist/ReactToastify.css';
-import { getEvents, createEvent } from '@/services/api';
+import { getEvents, createEvent, updateEvent, deleteEvent } from '@/services/api';
 
 
 
@@ -19,6 +19,7 @@ export default function CalendarClient() {
     const [time, setTime] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [videoUrl, setVideoUrl] = useState('');
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
 
     const fetchEvents = async () => {
@@ -53,23 +54,47 @@ export default function CalendarClient() {
         return d.toISOString().split('T')[0]; // YYYY-MM-DD
     };
 
+    // const handleSave = async () => {
+    //     const key = getDateKey(date);
+    //     try{
+    //         const res = await createEvent({
+    //             title: eventTitle,
+    //             datetime: `${key}T${time || '00:00'}:00`,
+    //             description: '',
+    //             imageUrl,
+    //             videoUrl,
+    //         });
+    //         toast.success('Event saved!');
+    //         setIsModalOpen(false);
+    //         fetchEvents();
+    //     }catch(error){
+    //         toast.error('Failed to save event');
+    //     }
+    // };
+
     const handleSave = async () => {
         const key = getDateKey(date);
-        // setEvents(prev => ({ ...prev, [key]: eventTitle }));
-        // toast.success('Event saved!');
-        // setIsModalOpen(false);
-        try{
-            const res = await createEvent({
-                title: eventTitle,
-                datetime: `${key}T${time || '00:00'}:00`,
-                description: '',
-                imageUrl,
-                videoUrl,
-            });
-            toast.success('Event saved!');
+        const payload = {
+            title: eventTitle,
+            datetime: `${key}T${time || '00:00'}:00`,
+            description: '',
+            imageUrl,
+            videoUrl,
+        };
+
+        try {
+            if (selectedEventId) {
+            await updateEvent(selectedEventId, payload);
+            toast.success('Event updated!');
+            } else {
+            await createEvent(payload);
+            toast.success('Event created!');
+            }
+
             setIsModalOpen(false);
+            setSelectedEventId(null);
             fetchEvents();
-        }catch(error){
+        } catch {
             toast.error('Failed to save event');
         }
     };
@@ -88,17 +113,6 @@ export default function CalendarClient() {
 
         {/* {events[getDateKey(date)]?.length > 0 && (
             <div className="mb-4 text-sm text-black">
-                <p className="font-medium">Saved events:</p>
-                <ul className="list-disc list-inside">
-                {events[getDateKey(date)].map((event, idx) => (
-                    <li key={idx}>{event.title}</li>
-                ))}
-                </ul>
-            </div>
-        )} */}
-
-        {events[getDateKey(date)]?.length > 0 && (
-            <div className="mb-4 text-sm text-black">
                 <p className="font-medium mb-1">Saved events:</p>
                 <ul className="list-disc list-inside space-y-1">
                 {events[getDateKey(date)].map((event, idx) => {
@@ -110,6 +124,54 @@ export default function CalendarClient() {
                     return (
                     <li key={event.id}>
                         <span className="font-semibold">{time}</span> — {event.title}
+                    </li>
+                    );
+                })}
+                </ul>
+            </div>
+        )} */}
+
+        {events[getDateKey(date)]?.length > 0 && (
+            <div className="mb-4 text-sm text-black">
+                <p className="font-medium mb-1">Saved events:</p>
+                <ul className="list-disc list-inside space-y-1">
+                {events[getDateKey(date)].map((event) => {
+                    const time = new Date(event.datetime).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    });
+
+                    return (
+                    <li key={event.id} className="flex justify-between items-center">
+                        <span
+                            className="cursor-pointer hover:text-blue-500"
+                            onClick={() => {
+                                setDate(new Date(event.datetime));
+                                setSelectedEventId(event.id);
+                                setEventTitle(event.title);
+                                setTime(new Date(event.datetime).toTimeString().slice(0, 5));
+                                setImageUrl(event.imageUrl || '');
+                                setVideoUrl(event.videoUrl || '');
+                                setIsModalOpen(true);
+                            }}
+                        >
+                        <span className="font-semibold">{time}</span> — {event.title}
+                        </span>
+
+                        <button
+                        onClick={async () => {
+                            try {
+                                await deleteEvent(event.id);
+                                toast.success('Event deleted!');
+                                fetchEvents();
+                            } catch {
+                                toast.error('Failed to delete event');
+                            }
+                        }}
+                        className="ml-2 text-red-500 text-xs hover:underline"
+                        >
+                        Delete
+                        </button>
                     </li>
                     );
                 })}
@@ -154,7 +216,14 @@ export default function CalendarClient() {
             />
             <div className="flex justify-end space-x-2">
             <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedEventId(null);
+                    setEventTitle('');
+                    setTime('');
+                    setImageUrl('');
+                    setVideoUrl('');
+                }}
                 className="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 text-black"
             >
             Cancel
