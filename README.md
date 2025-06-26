@@ -45,10 +45,10 @@ calendar-app/
 
 ## Backend Setup (NestJS)
 
-### Navigate to the `api/` folder:
+### Navigate to the `server/` folder:
 
 ```bash
-cd api
+cd server
 ```
 
 ### Install dependencies:
@@ -67,7 +67,7 @@ yarn start:dev
 npm run start:dev
 ```
 
-By default, the API will run at: `http://localhost:3000`
+By default, the server will run at: `http://localhost:3000`
 
 ---
 
@@ -76,7 +76,7 @@ By default, the API will run at: `http://localhost:3000`
 ### Navigate to the `client/` folder:
 
 ```bash
-cd ../client
+cd client
 ```
 
 ### Install dependencies:
